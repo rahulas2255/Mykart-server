@@ -282,3 +282,8 @@ app.listen(port,(error)=>{
         console.log("Error : "+error);
     }
 })
+// console log
+app.use((req, _, next) => {
+  console.log(`server console ${req.method} ${req.path}`);
+  next();
+});
