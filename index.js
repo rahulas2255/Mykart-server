@@ -4,15 +4,43 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
-const multer = require("multer");
 const path = require("path");
 const cors = require("cors");
+const fs = require('fs');
+const {multerMiddleware} = require('./multerMiddleware')
 app.use(express.json());
 app.use(cors());
 
 const DB_URL = process.env.DB_URL
 // Database connection With Mongo Db
 mongoose.connect(DB_URL);
+
+
+
+//script
+app.get('/l',(req,res) => {
+    const directory = 'upload/images';
+    let array = []
+    // Construct the full path to the directory
+  const directoryPath = path.join(process.cwd(), directory);
+
+  // Read the files in the directory
+  fs.readdir(directoryPath, (err, files) => {
+    if (err) {
+      console.error(`Error reading directory '${directory}':`, err);
+      res.status(500).json(`Error reading directory '${directory}':`, err)
+      return;
+    }
+
+    // Print the list of files
+    files.forEach((file, index) => {
+      array.push(`${index + 1}. ${file}`)
+     
+    });
+    res.status(200).json(array)
+  });
+
+  });
 
 // API Creation
 
@@ -23,12 +51,13 @@ app.get("/",(req,res)=>{
 
 // Image Storage Engine
 
-const storage = multer.diskStorage({
-    destination: './upload/images',
-    filename:(req,file,cb)=>{
-        return cb(null,`${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`)
-    }
-})
+// const storage = multer.diskStorage({
+//     destination: './upload/images',
+//     filename:(req,file,cb)=>{
+//         return cb(null,`${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`)
+//     }
+// })
+
 
 // Schema creating for User Modal
 
@@ -181,11 +210,12 @@ app.delete('/clearcart',fetchUser,async(req,res)=>{
 
 
 
-const upload = multer({storage:storage})
+// const upload = multer({storage:storage})
 
 // Creating Upload Enfpoint for images
 app.use('/images',express.static('upload/images'))
-app.post("/upload",upload.single('product'),(req,res)=>{
+app.post("/upload",multerMiddleware.single('product'),(req,res)=>{
+    console.log("request",req.path);
     res.json({
         success:1,
         image_url:`${req.file.filename}`
@@ -282,8 +312,3 @@ app.listen(port,(error)=>{
         console.log("Error : "+error);
     }
 })
-// console log
-app.use((req, _, next) => {
-  console.log(`server console ${req.method} ${req.path}`);
-  next();
-});
